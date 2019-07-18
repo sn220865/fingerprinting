@@ -1,0 +1,433 @@
+{% extends "layout.html" %}
+
+{% block head %}
+  <script src="static/plugin-detect-0.6.3.js" type="text/javascript"></script>
+  <script src="static/deployJava.js" type="text/javascript"></script>
+  <script src="static/fp2.js" type="text/javascript"></script>
+  {% include 'dist/fp2.html' %}
+  <script src="static/jquery.flash.js" type="text/javascript"></script>
+  <script src="static/trkTestVars.js" type="text/javascript"></script>
+  <link href="https://chrome.google.com/webstore/detail/pkehgijcmpdhfbdbbnkijodmdjhbjlgp" rel="chrome-webstore-item" />
+{% endblock %}
+
+{% block body %}
+  <p>
+    How well are you protected against non-consensual Web tracking? After analyzing your browser and add-ons, the answer is ...
+  </p>
+
+  <div id='results_wrapper'>
+    <p id='summary_sentence'></p>
+    <table class='tracker_results' id='results'>
+      <tbody>
+        <tr>
+          <th>
+            Test
+          </th>
+          <th>
+            Result
+          </th>
+        </tr>
+        <tr>
+          <td class='test_label'>Is your browser blocking tracking ads?</td>
+          <td id='ad_status'><img src='/static/images/ajax-loader.gif' alt='loading...'></td>
+        </tr>
+        <tr>
+          <td class='test_label'>Is your browser blocking invisible trackers?</td>
+          <td id='tracker_status'><img src='/static/images/ajax-loader.gif' alt='loading...'></td>
+        </tr>
+        <tr id='acceptable_ads_tr'>
+          <td class='test_label'>Does your blocker stop trackers that are included in the so-called <a href='https://www.eff.org/deeplinks/2017/11/panopticlick-30'>“acceptable ads”</a> whitelist?</td>
+          <td id='acceptable_ads_status'><img src='/static/images/ajax-loader.gif' alt='loading...'></td>
+        </tr>
+
+        <tr>
+          <td class='test_label'>Does your browser unblock 3rd parties that promise to honor <a href='https://www.eff.org/dnt-policy'>Do Not Track</a>?</td>
+          <td id='dnt_status'><img src='/static/images/ajax-loader.gif' alt='loading...'></td>
+        </tr>
+        <tr>
+          <td class='test_label'>Does your browser protect from <a id='showFingerprintLink1' href='#fingerprintTable'>fingerprinting</a>?</td>
+          <td id='fp_status'><img src='/static/images/ajax-loader.gif' alt='loading...'></td>
+        </tr>
+      </tbody>
+    </table>
+    <a id='showFingerprintLink2' href='#fingerprintTable'>Show full results for fingerprinting</a>
+    <p class="tracker_results">Note: because tracking techniques are complex, subtle, and constantly evolving, Panopticlick does not measure all forms of tracking and protection.</p>
+    <div id='fingerprintTable'></div>
+    <div id="buttons">
+      <div class="row">
+        <a href="/tracker" class="circle" id="trackerlink" title="Click here to re-test how trackable your browser is">Re-test your browser</a>
+      </div>
+    </div>
+    <div class="fingerprint-thanks">
+      <font size='-2'>Thanks to <a href='https://github.com/Valve/fingerprintjs2'>Fingerprint2</a> for various fingerprinting tests, <a href='http://www.aloodo.org/'>Aloodo</a> for portions of the tracker test, <a href="http://browserspy.dk">browserspy.dk</a> for the font detection code, and to <a href="https://labs.isecpartners.com/breadcrumbs/breadcrumbs.html">breadcrumbs</a> for supercookie help. Send questions or comments to <a href="mailto:panopticlick@eff.org">panopticlick@eff.org</a>.</font>
+    </div>
+  </div>
+  <iframe id="a" style="position:absolute;right:0px;bottom:0px;height:1px;width:1px;"></iframe>
+  <iframe id="t" style="position:absolute;left:0px;bottom:0px;height:1px;width:1px;"></iframe>
+  <iframe id="dnt" style="position:absolute;left:0px;bottom:0px;height:1px;width:1px;"></iframe>
+  <script type="text/javascript">
+    ghostery_enabled = true;
+    var status_str = {
+      'yes'    : "{% include '_yes.html' %}",
+      'no'     : "{% include '_no.html' %}",
+      'partial': "{% include '_partial.html' %}"
+    };
+    var fp_status_str = {
+      'yes'      : "{% include '_fp_yes.html' %}",
+      'no'       : "{% include '_fp_no.html' %}",
+      'no_unique': "{% include '_fp_no_unique.html' %}",
+      'partial'  : "{% include '_fp_partial.html' %}"
+    };
+    var download_links = "{% include '_summary_download_links.html' %}";
+    window.onload = function(){
+      document.getElementById('fingerprintTable').style.display = "none";
+      document.getElementById('buttons').style.display = "none";
+
+      var a_loads = {{ a_loads }};
+      var t_loads = {{ t_loads }};
+      var dnt_loads = {{ dnt_loads }};
+      var acceptable_ads_test = {{ acceptable_ads_test }};
+
+      if(acceptable_ads_test){
+        $('#trackerlink').attr('href', $('#trackerlink').attr('href') + '?aat=1');
+      }
+
+      (function fingerprint_table_ux(){
+        var showFingerprintLink1 = document.getElementById('showFingerprintLink1');
+        var showFingerprintLink2 = document.getElementById('showFingerprintLink2');
+        var fingerprintTable = document.getElementById('fingerprintTable')
+
+        showFingerprintLink1.onclick = showFingerprintLink2.onclick = function(){
+          showFingerprintLink2.style.display = 'none';
+          fingerprintTable.style.display = 'block';
+        };
+      })();
+
+      (function load_iframes(){
+        var cb = Math.floor((Math.random()*1000000)+1);
+        var a = document.getElementById('a');
+        a.src = 'https://{{ third_party_trackers['ad_server'] }}/tracking-tally?&random=' + cb;
+
+        var t = document.getElementById('t');
+        t.src = 'https://{{ third_party_trackers['tracker_server'] }}/tracking-tally?&random=' + cb;
+
+        var dnt = document.getElementById('dnt');
+        dnt.src = 'https://{{ third_party_trackers['dnt_server'] }}/tracking-tally?&random=' + cb;
+
+        var trackerlink = document.getElementById('trackerlink');
+        trackerlink.onclick = function clearCookies(){
+          a.src = 'https://{{ third_party_trackers['ad_server'] }}/clear-cookies?&random=' + cb;
+          t.src = 'https://{{ third_party_trackers['tracker_server'] }}/clear-cookies?&random=' + cb;
+          dnt.src = 'https://{{ third_party_trackers['dnt_server'] }}/clear-cookies?&random=' + cb;
+
+          setTimeout(function(){
+            window.location = trackerlink.href;
+          }, 2000);
+          return false;
+        }
+      })();
+
+      var results = {'known_blockers': []};
+      function display_results(){
+        var metrics = ['ad', 'tracker', 'dnt', 'acceptable_ads'];
+
+        for(x in metrics){
+          var metric = metrics[x];
+          if(metric in results){
+            document.getElementById(metric + '_status').innerHTML = status_str[results[metric]];
+          }
+        }
+      }
+
+      var counter = 0;
+      var sites_responding = {};
+      var tracker_assumed_status;
+      var ad_assumed_status;
+      (function handle_cross_origin_communication(){
+        window.addEventListener("message", receiveMessage, false);
+
+        function receiveMessage(event){
+          counter++;
+          sites_responding[event.origin] = true;
+          if(event.origin == "https://{{ third_party_trackers['ad_server'] }}"){
+            a_cookies = event.data.split(" ").length;
+            if(a_loads == 3){
+              if(a_loads > a_cookies){
+                ad_assumed_status = 'partial';
+              } else {
+                ad_assumed_status = 'no';
+              }
+            } else {
+              results['ad'] = 'yes';
+            }
+          } else if(event.origin == "https://{{ third_party_trackers['tracker_server'] }}"){
+            t_cookies = event.data.split(" ").length;
+            if(t_loads == 3){
+              if(t_loads > t_cookies){
+                tracker_assumed_status = 'partial';
+              } else {
+                tracker_assumed_status = 'no';
+              }
+            } else {
+              results['tracker'] = 'yes';
+            }
+          }
+          display_results();
+        }
+      })();
+
+      function install_link(browser, url) {
+        var install = document.createElement('a');
+        install.href = url;
+        install.innerHTML = "Install Privacy Badger<br><div>and Enable Do Not Track</div>";
+        install.onclick = function(){
+          if(browser == 'Chrome'){
+            event.preventDefault();
+            chrome.webstore.install(url, function(){}, function(){onChromeInstallFailure(url)});
+          }
+        }
+        return install;
+      }
+
+      function other_link(browser, url){
+        var other = document.createElement('p');
+        other.className = 'other_link';
+        other.href = url;
+        other.innerHTML = '<a href="'+url+'">Click here for '+browser+' version</a>';
+        return other;
+      }
+
+      function onChromeInstallFailure(url){
+        window.location.assign(url);
+      }
+
+      function detect_browser_and_platform(){
+        // detect browser
+        var browser = 'other';
+        var platform = 'desktop';
+        if(navigator && navigator.userAgent){
+          if(navigator.userAgent.match(/firefox/i)){
+            browser = 'firefox';
+            if(navigator.userAgent.match(/android/i)){
+              platform = 'android';
+            }
+          } else if(navigator.userAgent.match(/msie/i) || navigator.userAgent.match(/trident/i)){
+            browser = 'ie';
+          } else if(navigator.userAgent.match(/opr\//i)){
+            browser = 'opera';
+            if(navigator.userAgent.match(/mobile/i)){
+              platform = 'android';
+            }
+          } else if(navigator.userAgent.match(/chrome/i)) {
+            browser = 'chrome';
+            if(navigator.userAgent.match(/android/i)){
+              platform = 'android';
+            }
+          } else if(navigator.userAgent.match(/fxios/i)){
+            platform = 'ios';
+            browser = 'firefox';
+          } else if(navigator.userAgent.match(/crios/i)){
+            platform = 'ios';
+            browser = 'chrome';
+          } else if(navigator.userAgent.match(/safari/i)){
+            browser = 'safari';
+            if(navigator.userAgent.match(/mobile/i)){
+              platform = 'ios';
+            }
+          }
+        }
+        return {browser: browser, platform: platform};
+      }
+
+      // this function is mirrored by get_tool_recommendation in util.py.  if you change it here, make sure it's changed there as well.
+      function prepare_install_button(detection){
+        var firefox_url = document.querySelector('#badger-firefox').href;
+        var chrome_url = document.querySelector('#badger-chrome').href;
+        var opera_url = document.querySelector('#badger-opera').href;
+        var badger_download = document.getElementById('badger-download');
+        var tool_recommendation = document.getElementById('tool-recommendation');
+        var platform = detection.platform;
+        var browser = detection.browser;
+        badger_download.innerHTML = "";
+        badger_download.setAttribute('javascript', 'enabled');
+        // firefox
+        if(platform == 'desktop'){
+          if(browser == 'firefox'){
+            badger_download.onclick = function(){
+              window.location = firefox_url;
+            };
+            badger_download.appendChild(install_link('Firefox', firefox_url));
+            badger_download.parentNode.insertBefore(other_link('Opera', opera_url),badger_download.nextSibling);
+            badger_download.parentNode.insertBefore(other_link('Chrome', chrome_url),badger_download.nextSibling);
+          }
+          // chrome
+          else if(browser == 'chrome'){
+            badger_download.onclick = function(){
+              window.location = chrome_url;
+            };
+            badger_download.appendChild(install_link('Chrome', chrome_url));
+            badger_download.parentNode.insertBefore(other_link('Opera', opera_url),badger_download.nextSibling);
+            badger_download.parentNode.insertBefore(other_link('Firefox', firefox_url),badger_download.nextSibling);
+          } else if(browser == 'opera') {
+            badger_download.onclick = function(){
+              window.location = opera_url;
+            };
+            badger_download.appendChild(install_link('Opera', opera_url));
+            badger_download.parentNode.insertBefore(other_link('Chrome', chrome_url),badger_download.nextSibling);
+            badger_download.parentNode.insertBefore(other_link('Firefox', firefox_url),badger_download.nextSibling);
+          } else if(browser == 'ie'){
+            badger_download.style.display = "none";
+            tool_recommendation.href = "http://windows.microsoft.com/en-us/internet-explorer/use-tracking-protection#ie=ie-11";
+            tool_recommendation.innerHTML = "adding tracker protection lists EasyList and EasyPrivacy";
+          } else {
+            badger_download.style.display = "none";
+          }
+        } else if(platform == 'ios') {
+          if(browser == 'safari'){
+            badger_download.style.display = "none";
+            tool_recommendation.href = "https://itunes.apple.com/us/app/disconnect-best-blocking-award/id935480186?mt=8";
+            tool_recommendation.innerHTML = "Disconnect";
+          } else {
+            badger_download.style.display = "none";
+            tool_recommendation.href = "https://itunes.apple.com/us/app/disconnect-privacy-pro-entire/id1057771839?mt=8";
+            tool_recommendation.innerHTML = "Disconnect Privacy Pro";
+          }
+        } else if(platform == 'android'){
+          if(browser == 'firefox'){
+            badger_download.style.display = "none";
+            tool_recommendation.href = "https://addons.mozilla.org/en-US/android/addon/ublock-origin/";
+            tool_recommendation.innerHTML = "uBlock Origin";
+          } else {
+            badger_download.style.display = "none";
+            tool_recommendation.href = "https://disconnect.me/mobile/disconnect-mobile/sideload";
+            tool_recommendation.innerHTML = "Disconnect";
+          }
+        }
+      }
+
+      function record_results(){
+        var req = new XMLHttpRequest();
+        req.open("POST", "/record-results",true);
+        req.setRequestHeader('Content-type','application/json')
+        req.send(JSON.stringify(results));
+      }
+
+      setTimeout(function(){
+        if(counter < 3){
+          // We're using PrivacyBadger (heuristic blocking) or domain blacklist
+          results['ad'] = 'yes';
+          results['tracker'] = 'yes';
+          results['acceptable_ads'] = 'yes';
+          if("https://{{ third_party_trackers['dnt_server'] }}" in sites_responding){
+            results['dnt'] = 'yes';
+          } else {
+            results['dnt'] = 'no';
+          }
+        } else {
+          results['dnt'] = 'no';
+          if(ghostery_enabled){
+            results['tracker'] = 'yes';
+            results['ad'] = 'yes';
+            results['known_blockers'].push('ghostery');
+          } else {
+            if(tracker_assumed_status){
+              results['tracker'] = tracker_assumed_status;
+            }
+            if(ad_assumed_status){
+              results['ad'] = ad_assumed_status;
+            }
+          }
+        }
+
+        // Only display the results of the acceptable ads test if we have at
+        // least *some* protection against ads or trackers.
+        if(acceptable_ads_test && !(results['ad'] == "no" && results['tracker'] == "no")){
+          // If we don't already have a 'yes' result from Privacy Badger...
+          if(results['acceptable_ads'] != 'yes'){
+            results['acceptable_ads'] = 'yes';
+
+            var meta = document.createElement('meta');
+            meta.name = "referrer";
+            meta.content = "no-referrer";
+            document.getElementsByTagName('head')[0].appendChild(meta);
+
+            var acceptable_ad = document.createElement('img');
+            acceptable_ad.onload = function(){
+              results['acceptable_ads'] = 'no';
+              if(results['tracker'] == 'yes'){
+                results['tracker'] = 'partial';
+              }
+              if(results['ad'] == 'yes'){
+                results['ad'] = 'partial';
+              }
+              display_results();
+              display_summary_sentence();
+            };
+            acceptable_ad.src = "https://media.net/favicon.ico";
+          }
+          $('#acceptable_ads_tr').show();
+        }
+
+        display_results();
+        // final string from results...
+
+        function display_summary_sentence(){
+          var summary_sentence = document.getElementById('summary_sentence');
+
+          if(results['tracker'] == 'yes' && results['ad'] == 'yes' && results['dnt'] == 'yes'){
+            summary_sentence.innerHTML = "{% include '_summary_sentence_yes.html' %}";
+          } else if(results['tracker'] == 'yes' && results['ad'] == 'yes' && results['dnt'] == 'no'){
+            summary_sentence.innerHTML = "{% include '_summary_sentence_yes_sans_dnt.html' %}";
+          } else {
+            if(results['tracker'] == 'no' && results['ad'] == 'no') {
+              summary_sentence.innerHTML = "{% include '_summary_sentence_no.html' %}";
+            } else if(ghostery_detected) {
+              summary_sentence.innerHTML = "{% include '_summary_sentence_incomplete_protection.html' %}";
+            } else {
+              summary_sentence.innerHTML = "{% include '_summary_sentence_mixed.html' %}";
+            }
+            detection = detect_browser_and_platform();
+
+            if(detection.platform == 'desktop' && (detection.browser == "chrome" || detection.browser == "firefox" || detection.browser == "opera")){
+              summary_sentence.innerHTML += " <strong>installing EFF's Privacy Badger</strong>.";
+            } else if(detection.platform == 'desktop' && detection.browser != "ie") {
+              summary_sentence.innerHTML += " switching to a browser or OS that offers better protections.";
+            } else {
+              summary_sentence.innerHTML += " <strong>installing extra protections</strong>.  Privacy Badger isn't available for your browser / OS, but <a id='tool-recommendation' target='_blank'></a> may work for you.";
+            }
+            summary_sentence.innerHTML += download_links;
+
+            prepare_install_button(detection);
+          }
+          document.getElementById('buttons').style.display = 'block';
+        }
+        display_summary_sentence();
+        record_results();
+      },2000);
+
+      var tries = 0;
+      ghostery_detected = null;
+      var int_id = window.setInterval(function(){
+        var purple_box  = document.querySelector('div[title="Click to dismiss alert bubble"]');
+
+        //Ghostery installed
+        if (purple_box != null){
+          window.clearInterval(int_id);
+
+          ghostery_detected = 'yes';
+          /*var piwik_span = purple_box.querySelector('span');
+          if(piwik_span.className.match(/blocked$/)){
+            ghostery_detected = 'yes';
+          } else {
+            ghostery_detected = 'no';
+          }*/
+        } else if(tries >= 200){
+          window.clearInterval(int_id);
+        }
+        tries += 1;
+      },10);
+    };
+    window.onunload=function() {};
+  </script>
+  <script src="/static/zig.js" type='text/javascript'></script>
+{% endblock %}

@@ -1,0 +1,27 @@
+@header = {
+}
+@footer = {
+}
+
+@main(header, footer , "/about") {
+        <!-- Page Heading -->
+        <div class="row">
+            <div class="col-lg-12">
+            </div>
+        </div>
+
+        <!-- /.row -->
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2">
+
+                @Html(Messages("about"))
+
+                <br>
+                <div class="text-center">
+                <a href="http://www.inria.fr/en/centre/rennes"><img title="Inria" src="@routes.Assets.at("images/inria.png")"/></a>
+                <a href="http://www.insa-rennes.fr/en.html"><img title="Insa Rennes" src="@routes.Assets.at("images/insa.svg")" align="middle" /></a>
+                <a href="http://diversify-project.eu/"><img title="Diversify project" src="@routes.Assets.at("images/diversify.png")" width="350px" align="middle" /></a>
+                </div>
+            </div>
+        </div>
+}
