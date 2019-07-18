@@ -1,0 +1,144 @@
+@(header : Html = Html(""), footer : Html = Html(""), pagePath : String)(content: Html)
+@active(path: String) = @{
+  if (pagePath.startsWith(path))
+    Html("class='active'")
+  else
+    ""
+}
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=yes"/>
+    <title>Am I unique?</title>
+
+    <!-- Custom Fonts and Icons -->
+    <link rel="stylesheet" type="text/css" href="@routes.Assets.at("font-awesome/css/font-awesome.min.css")" >
+    <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/lato/latoFonts.css")">
+    <!-- Bootstrap core CSS  (Bootswatch Flatly Theme) -->
+    <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/bootstrap.min.css")">
+    <!-- Custom styles for this template -->
+    <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/sb-admin.css")">
+
+    <!-- Jquery/Bootstrap JS -->
+    <script type="text/javascript" src="@routes.Assets.at("javascripts/jquery.min.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("javascripts/bootstrap.min.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("javascripts/cookies.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("javascripts/returningVisitor.js")"></script>
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- JS Fix for IE8 display bugs -->
+    <!--[if lt IE 9]>
+      <script type="text/javascript" src="@routes.Assets.at("javascripts/html5shiv.min.js")"></script>
+      <script type="text/javascript" src="@routes.Assets.at("javascripts/respond.min.js")"></script>
+      <script type="text/javascript" src="@routes.Assets.at("javascripts/IECSSFix.js")"></script>
+    <![endif]-->
+
+    @header
+
+</head>
+<body>
+
+    <div id="wrapper">
+
+        <!-- Navigation -->
+        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/">Am I Unique?</a>
+            </div>
+
+            <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav side-nav">
+                    <li @active("/home")>
+                        <a style="color:#ffffff" href="/"><i class="fa fa-fw fa-home"></i>&nbsp; @Messages("menu.home")</a>
+                    </li>
+                    <li @active("/fp")>
+                        <a style="color:#ffffff" id="menuLink" href="/fpNoJs"><i class="fa fa-fw fa-paw"></i>&nbsp; @Messages("menu.myfp")</a>
+                    </li>
+                    @if(request().cookies().get("localhost:9000") != null){
+                        <li @active("/history")>
+                            <a style="color:#ffffff" href="/history"><i class="fa fa-fw fa-book"></i>&nbsp;  @Messages("menu.history")</a>
+                        </li>
+                    }
+                    <li @active("/extension")>
+                        <a style="color:#ffffff" id="menuTimeline" href="/timeline"><i class="fa fa-fw fa-clock-o"></i>&nbsp; @Messages("menu.timeline") &nbsp;&nbsp;<span class="label label-primary">@Messages("menu.new")</span></a>
+                    </li>
+                    <li @active("/stats")>
+                        <a style="color:#ffffff" href="/stats"><i class="fa fa-fw fa-pie-chart"></i>&nbsp;  @Messages("menu.globalstats")</a>
+                    </li>
+                    <li @active("/faq")>
+                        <a style="color:#ffffff" href="/faq"><i class="fa fa-fw fa-question"></i>&nbsp; @Messages("menu.faq")</a>
+                    </li>
+                    <li @active("/privacy")>
+                        <a style="color:#ffffff" href="/privacy"><i class="fa fa-fw fa-shield"></i>&nbsp; @Messages("menu.privpolicy")</a>
+                    </li>
+                    <li @active("/tools")>
+                        <a style="color:#ffffff" href="/tools"><i class="fa fa-fw fa-cogs"></i>&nbsp; @Messages("menu.privtools")</a>
+                    </li>
+
+                    <li @active("/links")>
+                        <a style="color:#ffffff" href="/links"><i class="fa fa-fw fa-link"></i>&nbsp; @Messages("menu.links") &nbsp;&nbsp;<span class="label label-primary">@Messages("menu.upd")</span></a>
+                    </li>
+                    <li @active("/about")>
+                        <a style="color:#ffffff" href="/about"><i class="fa fa-fw fa-circle-o"></i>&nbsp; @Messages("menu.about")</a>
+                    </li>
+                    <li>
+                        <a style="color:#ffffff" href="https://github.com/DIVERSIFY-project/amiunique" target="GitHub"><i class="fa fa-fw fa-github-alt"></i>&nbsp; @Messages("menu.github")</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </nav>
+
+        <div id="page-wrapper">
+            <div class="container-fluid">
+                <div class="col-lg-8 col-lg-offset-2">
+                    @content
+                </div>
+            </div>
+            <!-- /.container-fluid -->
+        </div>
+        <!-- /#page-wrapper -->
+
+    </div>
+    <!-- /#wrapper -->
+
+    <!-- code for the modal window -->
+    <a style="display:none;" id="returningvis" href="#" data-toggle="modal" data-target="#basicModal"></a>
+
+    <div class="modal fade" id="basicModal" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">@Messages("modal.title")</h4>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        @Messages("modal.body1") <a href="/fp">@Messages("menu.myfp")</a> @Messages("modal.body2") <a href="/history">@Messages("menu.history")</a> @Messages("modal.body3")
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">@Messages("modal.close")</button>
+                    <a href="/fp"><button type="button" class="btn btn-primary">@Messages("modal.history")</button></a>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    @footer
+
+    <script type="text/javascript">
+        document.getElementById("menuLink").href = "/fp";
+    </script>
+
+</body>
+</html>
