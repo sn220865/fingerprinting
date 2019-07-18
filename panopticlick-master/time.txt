@@ -1,4 +1,0 @@
-cookie_enabled : 0.000064 ms
-user agent : 0.000060 ms
-http_accept : 0.000094 ms
-dnt_enabled : 0.000044 ms

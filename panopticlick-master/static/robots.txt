@@ -1,4 +1,0 @@
-# How much identifying information is conveyed by a robot?
-
-User-agent: *
-Allow: /

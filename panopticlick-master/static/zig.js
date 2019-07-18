@@ -1,1 +1,0 @@
-ghostery_enabled = false;
